@@ -1,0 +1,9 @@
+# .gitignore file for ECE 581 Homework 2
+
+$ cat .gitignore
+
+# ignore everything in docs
+# these are just PDFs and Word files
+# available on D2L course website
+
+/docs/*
