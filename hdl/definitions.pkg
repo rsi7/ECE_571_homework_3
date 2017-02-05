@@ -1,13 +1,12 @@
-// Module: definition.pkg
+// Module: definitions.pkg
 // Author: Rehan Iqbal
-// Date: January 30, 2017
+// Date: February 10, 2017
 // Company: Portland State University
 //
 // Description:
 // ------------
-// Package definitions file for the findMax module & testbench. Contains
-// type definitions for unsigned vars, parameters for FSM states, and number
-// of testbench trial to run.
+// Package definitions file for the memController module & testbench. Contains
+// type definitions for unsigned vars and parameters for FSM states.
 //
 // Include in target modules through syntax: `include "definitions.pkg"
 // Make sure library paths include this file!
@@ -22,8 +21,11 @@
 
 	package definitions;
 
-		// number of trials to run in testbench
-		parameter	trials		=	10;
+		// top four bits of the outgoing address
+		// determines which memory controller should respond
+		// to the incoming transaction
+
+		parameter	logic	[3:0]	PAGE	=	4'h2;
 
 		// type definitions for unsigned 4-state variables
 		typedef	logic		unsigned			ulogic1;
@@ -47,7 +49,7 @@
 		typedef	enum {true, false} bool;
 
 		// type for state
-		typedef enum logic unsigned [1:0] {IDLE, RECEIVING, DONE} state_t;
+		typedef enum logic unsigned {ADDR, RW} state_t;
 
 	endpackage
 
