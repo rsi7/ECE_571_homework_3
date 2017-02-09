@@ -49,7 +49,10 @@
 		typedef	enum {true, false} bool;
 
 		// type for state
-		typedef enum logic unsigned {ADDR, RW} state_t;
+		typedef enum logic [1:0] unsigned {	ADDR 	= 2'b00, 
+											RW		= 2'b01,
+											BAD		= 2'bxx
+											} state_t;
 
 	endpackage
 
