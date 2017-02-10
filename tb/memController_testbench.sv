@@ -16,9 +16,9 @@ module memController_testbench;
 	timeunit 1ns;
 	timeprecision 100ps;
 
-	/*************************************************************************/
-	/* Local parameters and variables										 */
-	/*************************************************************************/
+	/************************************************************************/
+	/* Local parameters and variables										*/
+	/************************************************************************/
 
 	inout	tri		[15:0]	AddrData_tb;	// Multiplexed AddrData bus. On a write
 											// operation the address, followed by 4
@@ -42,9 +42,9 @@ module memController_testbench;
 
 	int 		fhandle;					// integer to hold file location
 
-	/*************************************************************************/
-	/* Instantiating the DUT												 */
-	/*************************************************************************/
+	/************************************************************************/
+	/* Instantiating the DUT												*/
+	/************************************************************************/
 
 	memController DUT (
 
@@ -52,13 +52,11 @@ module memController_testbench;
 		.clk			(clk_tb),			// I [0:0] clock to the memory controller
 		.resetH			(resetH_tb),		// I [0:0] Active-high reset signal
 		.AddrValid		(AddrValid_tb),		// I [0:0] Active-high valid signal
-		.rw				(rw_tb)				// I [0:0] Active-high: read. Active-low: write
+		.rw				(rw_tb));			// I [0:0] Active-high: read. Active-low: write
 
-		);
-
-	/*************************************************************************/
-	/* Running the testbench simluation										 */
-	/*************************************************************************/
+	/************************************************************************/
+	/* Running the testbench simluation										*/
+	/************************************************************************/
 
 	// keep the clock ticking
 	always begin

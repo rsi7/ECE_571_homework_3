@@ -2,7 +2,6 @@
 // Author: Rehan Iqbal
 // Date: February 10, 2017
 // Company: Portland State University
-// test
 // Description:
 // ------------
 // Acts as a memory controller for the 'mem' module. On the first clock cycle,
@@ -11,15 +10,15 @@
 // the memory and output them on 'data', or write the bits on 'data' into 
 // memory. The next transaction begins on the following cycle.
 //
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 `include "definitions.pkg"
 
 module memController (
 
-	/*************************************************************************/
-	/* Top-level port declarations											 */
-	/*************************************************************************/
+	/************************************************************************/
+	/* Top-level port declarations											*/
+	/************************************************************************/
 
 	inout	tri		[15:0]	AddrData,	// Multiplexed AddrData bus. On a write
 										// operation the address, followed by 4
@@ -42,22 +41,47 @@ module memController (
 										// valid during cycle where AddrValid asserts
 	);
 
-	/*************************************************************************/
-	/* Local parameters and variables										 */
-	/*************************************************************************/
+	/************************************************************************/
+	/* Local parameters and variables										*/
+	/************************************************************************/
 
-	state_t		state	=	ADDR;		// register to hold current FSM state
-	state_t		next	=	ADDR;		// register to hold pending FSM state
+	state_t				state;			// register to hold current FSM state
+	state_t				next;			// register to hold pending FSM state
 
-	/*************************************************************************/
-	/* FSM Block 1: reset & state advancement								 */
-	/*************************************************************************/
+	ulogic1				rdEn;			// Asserted high to read the memory
+	ulogic1				wrEn;			// Asserted high to write the memory
+
+	ulogic8				Addr;			// Address to read or write
+
+	tri		[15:0]		Data;			// Data to (write) and from (read) the
+										// memory.  Tristate (z) when rdEn is
+										// is deasserted (low)
+
+	/************************************************************************/
+	/* Instantiate a memory device											*/
+	/************************************************************************/
+	
+	mem mem1 (
+
+		.clk			(clk),		// I [0] clock (this is a synchronous memory)
+		.rdEn			(rdEn),		// I [0] Asserted high to read the memory
+		.wrEn			(wrEn),		// I [0] Asserted high to write the memory
+
+		.Addr			(Addr),		// I [15:0] Address to read or write
+
+		.Data			(Data));	// T [15:0] Data to (write) and from (read) the
+									// 			memory.  Tristate (z) when rdEn is
+									// 			is deasserted (low)
+
+	/************************************************************************/
+	/* FSM Block 1: reset & state advancement								*/
+	/************************************************************************/
 
 	always_ff@(posedge clk or posedge reset) begin
 
-		// reset the FSM to idle state
+		// reset the FSM to waiting state
 		if (reset) begin
-			state <= IDLE;
+			state <= STATE_A;
 		end
 
 		// otherwise, advance the state
@@ -67,112 +91,70 @@ module memController (
 
 	end
 
-	/*************************************************************************/
-	/* FSM Block 2: state transistions										 */
-	/*************************************************************************/
+	/************************************************************************/
+	/* FSM Block 2: state transistions										*/
+	/************************************************************************/
 
-	always_comb@(posedge clk or posedge reset) begin
+	always_ff@(posedge clk) begin
 
 		unique case (state)
 
-			// check if start was asserted
-			// if so, FSM is receiving data
-			// otherwise, keep idle
+			// each state lasts exactly 1 cycle,
+			// except STATE_A, which holds until AddrValid
 
-			IDLE : begin
-				if (start) next = RECEIVING;
-				else next = IDLE;
+			STATE_A : begin
+				if (AddrValid) next <= STATE_B;
+				else next <= STATE_A;
 			end
 
-			// check if start was de-asserted
-			// if so, move to DONE state
-			// otherwise, still receiving data
+			STATE_B : next <= STATE_C;
+			STATE_C : next <= STATE_D;
+			STATE_D : next <= STATE_E;
+			STATE_E : next <= STATE_A;
 
-			RECEIVING : begin
-				if (!start) next = DONE;
-				else next = RECEIVING;
-			end
-
-			// final results only last 1 cycle
-			DONE : next = IDLE;
-
-			default : next = BAD_STATE;
+			// handle unknown states by transitioning to fallout state
+			default : next <= STATE_X;
 
 		endcase
 	end
 
-	/*************************************************************************/
-	/* FSM Block 3: assigning outputs										 */
-	/*************************************************************************/
+	/************************************************************************/
+	/* FSM Commbinational: assigning outputs								*/
+	/************************************************************************/
 
-	always_comb@(posedge clk or posedge reset) begin
+	always_comb(posedge clk) begin
 
-		// if reset was asserted, clear the outputs
-		if (reset) begin
-			maxValue	= '0;
-			minValue	= '1;
-			done		= '0;
-		end
+		unique case (state)
 
-		else begin
+			// handle address input & determine R/W status
+			STATE_A : begin
 
-			unique case(next)
+				rdEn = (rw) ? 1'b1 : 1'b0; 
+				wrEn = (rw) ? 1'b0 : 1'b1;
+				Addr = (AddrValid) ? (AddrData) : '0;
+				Data = 'z;
 
-				// check if starting to receive data
-				// if so, update maxValue & minValue
+			end
 
-				IDLE : begin
+			// handles transactions on cycles 2 thru 5
+			STATE_B, STATE_C, STATE_D, STATE_E : begin
 
-					if (start) begin
-						maxValue = inputA;
-						minValue = inputA;
-					end
+				rdEn = rdEn; 
+				wrEn = wrEn;
+				Addr = Addr + 1;
+				Data = (rdEn) ? 'z : AddrData;
 
-					else begin
-						maxValue = '0;
-						minValue = '1;
-					end
+			end
 
-					done = '0;
-				end
+			default : begin
 
-				// compare current maxValue against new data input
-				// update if needed - retain previous value otherwise
+				rdEn = 'x; 
+				wrEn = 'x;
+				Addr = 'x;
+				Data = 'z;
 
-				RECEIVING : begin
+			end
 
-					if (inputA > maxValue) begin
-						maxValue = inputA;
-					end
-
-					else if (inputA < minValue) begin
-						minValue = inputA;
-					end
-
-					else begin
-						maxValue = maxValue;
-						minValue = minValue;
-					end
-
-					done = '0;
-				end
-
-				// set done flag high to indicate processing finished
-				DONE : begin
-					maxValue = maxValue;
-					minValue = minValue;
-					done = '1;
-				end
-
-				// set outputs to unknown if case statement fails
-				default : begin
-					maxValue = 'x;
-					minValue = 'x;
-					done = 'x;
-				end
-
-			endcase	
-		end
-	end
+		endcase
 
 endmodule

@@ -11,7 +11,7 @@
 // Include in target modules through syntax: `include "definitions.pkg"
 // Make sure library paths include this file!
 // 
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 	
 // check if file has been imported already
 `ifndef IMPORT_DEFS
@@ -49,9 +49,12 @@
 		typedef	enum {true, false} bool;
 
 		// type for state
-		typedef enum logic [1:0] unsigned {	ADDR 	= 2'b00, 
-											RW		= 2'b01,
-											BAD		= 2'bxx
+		typedef enum logic [2:0] unsigned {	STATE_A	= 3'd1,
+											STATE_B	= 3'd2, 
+											STATE_C	= 3'd3,
+											STATE_D	= 3'd4,
+											STATE_E	= 3'd5,
+											STATE_X	= 3'bxxx
 											} state_t;
 
 	endpackage
