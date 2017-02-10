@@ -30,14 +30,14 @@ module memController (
 										// will drive the data from the memory onto
 										// the AddrData bus.
 
-	input	ulogic1			clk,		// clock to the memory controller and memory
-	input	ulogic1			resetH,		// Asserted high to reset the memory controller
+	input	ulogic1		clk,			// clock to the memory controller and memory
+	input	ulogic1		resetH,			// Asserted high to reset the memory controller
 
-	input	ulogic1			AddrValid,	// Asserted high to indicate that there is
+	input	ulogic1		AddrValid,		// Asserted high to indicate that there is
 										// valid address on AddrData. Kicks off
 										// new memory read or write cycle.
 
-	input	ulogic1			rw			// Asserted high for read, low for write
+	input	ulogic1		rw				// Asserted high for read, low for write
 										// valid during cycle where AddrValid asserts
 	);
 
@@ -45,15 +45,15 @@ module memController (
 	/* Local parameters and variables										*/
 	/************************************************************************/
 
-	state_t				state;			// register to hold current FSM state
-	state_t				next;			// register to hold pending FSM state
+	state_t		state	= STATE_A;		// register to hold current FSM state
+	state_t		next;	= STATE_A;		// register to hold pending FSM state
 
-	ulogic1				rdEn;			// Asserted high to read the memory
-	ulogic1				wrEn;			// Asserted high to write the memory
+	ulogic1		rdEn;					// Asserted high to read the memory
+	ulogic1		wrEn;					// Asserted high to write the memory
 
-	ulogic8				Addr;			// Address to read or write
+	ulogic8		Addr;					// Address to read or write
 
-	tri		[15:0]		Data;			// Data to (write) and from (read) the
+	tri	[15:0]	Data;					// Data to (write) and from (read) the
 										// memory.  Tristate (z) when rdEn is
 										// is deasserted (low)
 
@@ -63,15 +63,20 @@ module memController (
 	
 	mem mem1 (
 
-		.clk			(clk),		// I [0] clock (this is a synchronous memory)
-		.rdEn			(rdEn),		// I [0] Asserted high to read the memory
-		.wrEn			(wrEn),		// I [0] Asserted high to write the memory
+		.clk		(clk),		// I [0] clock (this is a synchronous memory)
+		.rdEn		(rdEn),		// I [0] Asserted high to read the memory
+		.wrEn		(wrEn),		// I [0] Asserted high to write the memory
 
-		.Addr			(Addr),		// I [15:0] Address to read or write
+		.Addr		(Addr),		// I [15:0] Address to read or write
 
-		.Data			(Data));	// T [15:0] Data to (write) and from (read) the
-									// 			memory.  Tristate (z) when rdEn is
-									// 			is deasserted (low)
+		.Data		(Data));	// T [15:0] Data to (write) and from (read) the
+								// memory.  Tristate (z) when rdEn is low
+
+	/************************************************************************/
+	/* Global Assignments													*/
+	/************************************************************************/
+
+	assign AddrData = (rdEn) ? Data : 'z;
 
 	/************************************************************************/
 	/* FSM Block 1: reset & state advancement								*/
@@ -112,9 +117,6 @@ module memController (
 			STATE_D : next <= STATE_E;
 			STATE_E : next <= STATE_A;
 
-			// handle unknown states by transitioning to fallout state
-			default : next <= STATE_X;
-
 		endcase
 	end
 
@@ -137,21 +139,16 @@ module memController (
 			end
 
 			// handles transactions on cycles 2 thru 5
+			// rdEn & wrEn remain the same
+			// increment the memory address
+			// either deassert data line or push data onto it
+
 			STATE_B, STATE_C, STATE_D, STATE_E : begin
 
 				rdEn = rdEn; 
 				wrEn = wrEn;
 				Addr = Addr + 1;
 				Data = (rdEn) ? 'z : AddrData;
-
-			end
-
-			default : begin
-
-				rdEn = 'x; 
-				wrEn = 'x;
-				Addr = 'x;
-				Data = 'z;
 
 			end
 
