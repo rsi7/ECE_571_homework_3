@@ -46,7 +46,7 @@ module memController (
 	/************************************************************************/
 
 	state_t		state	= STATE_A;		// register to hold current FSM state
-	state_t		next;	= STATE_A;		// register to hold pending FSM state
+	state_t		next	= STATE_A;		// register to hold pending FSM state
 
 	ulogic1		rdEn;					// Asserted high to read the memory
 	ulogic1		wrEn;					// Asserted high to write the memory
@@ -82,10 +82,10 @@ module memController (
 	/* FSM Block 1: reset & state advancement								*/
 	/************************************************************************/
 
-	always_ff@(posedge clk or posedge reset) begin
+	always_ff@(posedge clk or posedge resetH) begin
 
 		// reset the FSM to waiting state
-		if (reset) begin
+		if (resetH) begin
 			state <= STATE_A;
 		end
 
@@ -133,7 +133,7 @@ module memController (
 
 				rdEn = (rw) ? 1'b1 : 1'b0; 
 				wrEn = (rw) ? 1'b0 : 1'b1;
-				Addr = (AddrValid) ? (AddrData) : '0;
+				Addr = (AddrValid) ? (AddrData[7:0]) : '0;
 				Data = 'z;
 
 			end

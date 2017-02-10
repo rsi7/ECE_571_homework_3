@@ -6,6 +6,9 @@
 // Description:
 // ------------
 // lorem ipsum
+// task for read packets
+// task for write packets
+// packet = 4 16'b values
 // 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -58,12 +61,20 @@ module memController_testbench;
 	/* Running the testbench simluation										*/
 	/************************************************************************/
 
-	// keep the clock ticking
-	always begin
-		#0.5 clk_tb <= !clk_tb;
+	initial begin
+
+		//	reset before clock starts ticking...
+			resetH_tb = 1'b0;
+		#5 	resetH_tb = 1'b1;
+		#5 	resetH_tb = 1'b0;
+
+		// now start the clock for rest of simulation...
+		forever #0.5 clk_tb <= !clk_tb;
 	end
 
-	// main simulation loop
+	//////////////////////////
+	// main simulation loop //
+	//////////////////////////
 
 	initial begin
 
@@ -71,11 +82,7 @@ module memController_testbench;
 		// also setup the output file location
 
 		$timeformat(-9, 0, "ns", 8);
-		fhandle = $fopen("C:/Users/riqbal/Desktop/findMax_results.txt");
-
-		// toggle the resets to start the FSM
-		#5 reset_tb = '1;
-		#5 reset_tb = '0;
+		fhandle = $fopen("C:/Users/riqbal/Desktop/memController_results.txt");
 
 		// run the simulation for some number of sequences
 		for (int j = 1; j <= trials; j++) begin
