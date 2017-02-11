@@ -52,19 +52,24 @@
 		typedef enum {READ, WRITE} pktType_t;
 
 		// typedef for state
-		typedef enum logic [2:0] unsigned {	STATE_A	= 3'd1,
-											STATE_B	= 3'd2, 
-											STATE_C	= 3'd3,
-											STATE_D	= 3'd4,
-											STATE_E	= 3'd5,
-											STATE_X	= 3'bxxx
-											} state_t;
+		typedef enum logic unsigned [2:0] {	
+
+			STATE_A = 3'd0, 
+			STATE_B = 3'd1, 
+			STATE_C = 3'd2, 
+			STATE_D = 3'd3, 
+			STATE_E = 3'd4,
+			STATE_X = 3'bxxx
+
+			} state_t;
 
 		// typedef for memory packet structure
 		typedef struct {
+
 			pktType_t	Type;
 			ulogic16	Address;
 			ulogic16	Data[4];
+			
 		} memPkt_t;
 
 	endpackage

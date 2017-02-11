@@ -25,7 +25,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-`include "definitions.pkg"
+`include "definitions.sv"
 
 program memController_testbench (
 
@@ -46,11 +46,11 @@ program memController_testbench (
 	input	ulogic1		clk,			// clock to the memory controller and memory
 	input	ulogic1		resetH,			// Asserted high to reset the memory controller
 
-	input	ulogic1		AddrValid,		// Asserted high to indicate that there is
+	output	ulogic1		AddrValid,		// Asserted high to indicate that there is
 										// valid address on AddrData. Kicks off
 										// new memory read or write cycle.
 
-	input	ulogic1		rw				// Asserted high for read, low for write
+	output	ulogic1		rw				// Asserted high for read, low for write
 										// valid during cycle where AddrValid asserts
 	);
 
@@ -60,10 +60,17 @@ program memController_testbench (
 
 	int			trials = 10;				// number of packets to send
 
-	int 		fhandle_hw_hw;				// integer to hold file location
+	int 		fhandle_hw;					// integer to hold file location
 
-	memPkt_t	pkt_array[trials];			// array to hold all the packets
+	memPkt_t	pkt_array[10];				// array to hold all the packets
 
+	ulogic16	pktAddrData;
+
+	/************************************************************************/
+	/* Wire assignments														*/
+	/************************************************************************/
+
+	assign AddrData = ((DUT.rdEn) && (!AddrValid)) ? 16'bz : pktAddrData;
 	
 	/************************************************************************/
 	/* Task : PktGen														*/
@@ -85,6 +92,8 @@ program memController_testbench (
 		 		pkt.Data[i] = 16'd0;
 		 	end
 
+		 end
+
 	endtask
 
 	/************************************************************************/
@@ -95,7 +104,7 @@ program memController_testbench (
 
 		AddrValid = 1'b1;
 		rw = pkt.Type;
-		AddrData = pkt.Address;
+		pktAddrData = pkt.Address;
 
 		// for each element in packet data length
 		// (four elements by default)
@@ -103,17 +112,17 @@ program memController_testbench (
 
 		foreach (pkt.Data[i]) begin
 
-				@(posedge clk)
-				AddrValid = 1'b0;
-				rw = 1'b0;
+			@(posedge clk)
+			AddrValid = 1'b0;
+			rw = 1'b0;
 
-				if (pkt.Type == READ) begin
-					pkt.Data[i] = AddrData;
-				end
+			if (pkt.Type == READ) begin
+				pkt.Data[i] = AddrData;
+			end
 
-				else begin
-					AddrData = pkt.Data[i];
-				end
+			else begin
+				pktAddrData = pkt.Data[i];
+			end
 		end
 
 	endtask
@@ -140,7 +149,7 @@ program memController_testbench (
 
 			$fstrobe(fhandle_hw,	"Time:%t\t\t", $time,
 									"Packet #: %d\t\t", i,
-									"Packet Type: %s\t\t", pkt_array[i].Type.name;
+									"Packet Type: %s\t\t", pkt_array[i].Type.name,
 									"Packet Address: %x\t\t", pkt_array[i].Address);
 		end
 

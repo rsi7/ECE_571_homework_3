@@ -12,7 +12,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////
 
-`include "definitions.pkg"
+`include "definitions.sv"
 
 module memController (
 
@@ -61,22 +61,14 @@ module memController (
 	/* Instantiate a memory device											*/
 	/************************************************************************/
 	
-	mem mem1 (
-
-		.clk		(clk),		// I [0] clock (this is a synchronous memory)
-		.rdEn		(rdEn),		// I [0] Asserted high to read the memory
-		.wrEn		(wrEn),		// I [0] Asserted high to write the memory
-
-		.Addr		(Addr),		// I [15:0] Address to read or write
-
-		.Data		(Data));	// T [15:0] Data to (write) and from (read) the
-								// memory.  Tristate (z) when rdEn is low
+	mem		mem1	(.*);
 
 	/************************************************************************/
-	/* Global Assignments													*/
+	/* Wire assignments														*/
 	/************************************************************************/
 
-	assign AddrData = (rdEn) ? Data : 'z;
+	assign Data 	= ((state != STATE_A) && (wrEn)) ? AddrData : 16'bz;
+	assign AddrData	= (rdEn) ? Data : 16'bz;
 
 	/************************************************************************/
 	/* FSM Block 1: reset & state advancement								*/
@@ -124,7 +116,7 @@ module memController (
 	/* FSM Commbinational: assigning outputs								*/
 	/************************************************************************/
 
-	always_comb(posedge clk) begin
+	always_comb begin
 
 		unique case (state)
 
@@ -134,7 +126,6 @@ module memController (
 				rdEn = (rw) ? 1'b1 : 1'b0; 
 				wrEn = (rw) ? 1'b0 : 1'b1;
 				Addr = (AddrValid) ? (AddrData[7:0]) : '0;
-				Data = 'z;
 
 			end
 
@@ -148,10 +139,9 @@ module memController (
 				rdEn = rdEn; 
 				wrEn = wrEn;
 				Addr = Addr + 1;
-				Data = (rdEn) ? 'z : AddrData;
 
 			end
-
 		endcase
+	end
 
 endmodule
