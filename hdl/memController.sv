@@ -93,7 +93,7 @@ module memController (
 	/* FSM Block 2: state transistions										*/
 	/************************************************************************/
 
-	always_ff@(posedge clk) begin
+	always_comb begin
 
 		unique case (state)
 
@@ -101,14 +101,14 @@ module memController (
 			// except STATE_A, which holds until AddrValid
 
 			STATE_A : begin
-				if (AddrValid) next <= STATE_B;
-				else next <= STATE_A;
+				if (AddrValid) next = STATE_B;
+				else next = STATE_A;
 			end
 
-			STATE_B : next <= STATE_C;
-			STATE_C : next <= STATE_D;
-			STATE_D : next <= STATE_E;
-			STATE_E : next <= STATE_A;
+			STATE_B : next = STATE_C;
+			STATE_C : next = STATE_D;
+			STATE_D : next = STATE_E;
+			STATE_E : next = STATE_A;
 
 		endcase
 	end

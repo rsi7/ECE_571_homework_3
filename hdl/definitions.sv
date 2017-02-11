@@ -49,7 +49,7 @@
 		typedef	enum {true, false} bool_t;
 
 		// type for classifying packet transaction
-		typedef enum {READ, WRITE} pktType_t;
+		typedef enum logic unsigned {WRITE = 1'b0, READ = 1'b1} pktType_t;
 
 		// typedef for state
 		typedef enum logic unsigned [2:0] {	
@@ -69,7 +69,7 @@
 			pktType_t	Type;
 			ulogic16	Address;
 			ulogic16	Data[4];
-			
+
 		} memPkt_t;
 
 	endpackage
