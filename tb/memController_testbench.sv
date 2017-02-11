@@ -127,36 +127,36 @@ program memController_testbench	(
 	endtask
 
 	/************************************************************************/
-	/* Task : WriteTo Mem													*/
+	/* Task : WriteToMem													*/
 	/************************************************************************/
 
-	task WriteToMem (input uint32 trials);
+	task WriteToMem ();
 
-	int	fhandle_hw;
+		int	fhandle_wr;
 
-	// format time units for printing later
-	// also setup the output file location
+		// format time units for printing later
+		// also setup the output file location
 
-	$timeformat(-9, 0, "ns", 8);
-	fhandle_hw = $fopen("C:/Users/riqbal/Desktop/memController_hw_results.txt");
+		$timeformat(-9, 0, "ns", 8);
+		fhandle_wr = $fopen("C:/Users/riqbal/Desktop/memController_wr_results.txt");
 
-	// print header at top of hardware log
-	$fwrite(fhandle_hw,"Hardware Write Results:\n\n");
+		// print header at top of hardware log
+		$fwrite(fhandle_wr,"Hardware Write Results:\n\n");
 
-	for (int i = 0; i < trials; i++) begin
+		foreach (pkt_array[i]) begin
 
-		PktGen(WRITE, pkt_array[i]);
-		MemCycle(pkt_array[i]);
+			PktGen(WRITE, pkt_array[i]);
+			MemCycle(pkt_array[i]);
 
-		$fstrobe(fhandle_hw,	"Time:%t\t\t", $time,
-								"Packet #: %2d\t\t", i,
-								"Access Type: %s\t\t", pkt_array[i].Type.name,
-								"Base Address: %4x\t\t", pkt_array[i].Address);
-	end
+			$fstrobe(fhandle_wr,	"Time:%t\t\t", $time,
+									"Packet #: %2d\t\t", i,
+									"Access Type: %s\t\t", pkt_array[i].Type.name,
+									"Base Address: %4x\t\t", pkt_array[i].Address);
+		end
 
-	// wrap up file writing & finish simulation
-	$fwrite(fhandle_hw, "\nEND OF FILE");
-	$fclose(fhandle_hw);
+		// wrap up file writing & finish simulation
+		$fwrite(fhandle_wr, "\nEND OF FILE");
+		$fclose(fhandle_wr);
 
 	endtask
 
@@ -170,7 +170,7 @@ program memController_testbench	(
 
 		pkt_array = new[sim_trials];
 
-		WriteToMem(sim_trials);
+		WriteToMem();
 
 		$finish;
 
