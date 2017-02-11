@@ -60,12 +60,7 @@ program memController_testbench	(
 	/* Local parameters and variables										*/
 	/************************************************************************/
 
-	int			trials = 10;				// number of packets to send
-
-	int 		fhandle_hw;					// integer to hold file location
-
-	memPkt_t	pkt_array[10];				// array to hold all the packets
-
+	memPkt_t	pkt_array[];
 	ulogic16	pktAddrData;
 
 	/************************************************************************/
@@ -132,35 +127,52 @@ program memController_testbench	(
 	endtask
 
 	/************************************************************************/
+	/* Task : WriteTo Mem													*/
+	/************************************************************************/
+
+	task WriteToMem (input uint32 trials);
+
+	int	fhandle_hw;
+
+	// format time units for printing later
+	// also setup the output file location
+
+	$timeformat(-9, 0, "ns", 8);
+	fhandle_hw = $fopen("C:/Users/riqbal/Desktop/memController_hw_results.txt");
+
+	// print header at top of hardware log
+	$fwrite(fhandle_hw,"Hardware Write Results:\n\n");
+
+	for (int i = 0; i < trials; i++) begin
+
+		PktGen(WRITE, pkt_array[i]);
+		MemCycle(pkt_array[i]);
+
+		$fstrobe(fhandle_hw,	"Time:%t\t\t", $time,
+								"Packet #: %2d\t\t", i,
+								"Access Type: %s\t\t", pkt_array[i].Type.name,
+								"Base Address: %4x\t\t", pkt_array[i].Address);
+	end
+
+	// wrap up file writing & finish simulation
+	$fwrite(fhandle_hw, "\nEND OF FILE");
+	$fclose(fhandle_hw);
+
+	endtask
+
+	/************************************************************************/
 	/* Main simulation loop													*/
 	/************************************************************************/
 
 	initial begin
 
-		// format time units for printing later
-		// also setup the output file location
+		static uint32 sim_trials = 10;
 
-		$timeformat(-9, 0, "ns", 8);
-		fhandle_hw = $fopen("C:/Users/riqbal/Desktop/memController_hw_results.txt");
+		pkt_array = new[sim_trials];
 
-		// print header at top of hardware log
-		$fwrite(fhandle_hw,"Hardware Results\n\n");
+		WriteToMem(sim_trials);
 
-		for (int i = 0; i < trials; i++) begin
-
-			PktGen(WRITE, pkt_array[i]);
-			MemCycle(pkt_array[i]);
-
-			$fstrobe(fhandle_hw,	"Time:%t\t\t", $time,
-									"Packet #: %2d\t\t", i,
-									"Access Type: %s\t\t", pkt_array[i].Type.name,
-									"Base Address: %4x\t\t", pkt_array[i].Address);
-		end
-
-		// wrap up file writing & finish simulation
-		$fwrite(fhandle_hw, "\nEND OF FILE");
-		$fclose(fhandle_hw);
-		$stop;
+		$finish;
 
 	end
 
