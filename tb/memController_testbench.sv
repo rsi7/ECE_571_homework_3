@@ -154,7 +154,7 @@ program memController_testbench	(
 			$fstrobe(fhandle_hw,	"Time:%t\t\t", $time,
 									"Packet #: %2d\t\t", i,
 									"Access Type: %s\t\t", pkt_array[i].Type.name,
-									"Base Address: %6x\t\t", pkt_array[i].Address);
+									"Base Address: %4x\t\t", pkt_array[i].Address);
 		end
 
 		// wrap up file writing & finish simulation

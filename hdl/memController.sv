@@ -59,6 +59,12 @@ module memController (
 										// is deasserted (low)
 
 	/************************************************************************/
+	/* Local parameters and variables										*/
+	/************************************************************************/
+
+	ulogic16	AddrReg	= '0;
+
+	/************************************************************************/
 	/* Instantiate a memory device											*/
 	/************************************************************************/
 	
@@ -114,7 +120,7 @@ module memController (
 	end
 
 	/************************************************************************/
-	/* FSM Commbinational: assigning outputs								*/
+	/* FSM Block 3 & 4: assigning outputs									*/
 	/************************************************************************/
 
 	always_comb begin
@@ -139,10 +145,21 @@ module memController (
 
 				rdEn = rdEn; 
 				wrEn = wrEn;
-				Addr = Addr + 1;
+				Addr = AddrReg;
 
 			end
 		endcase
+	end
+
+	always_ff@(posedge clk) begin
+
+		unique case (state)
+
+			STATE_A : AddrReg <= Addr;
+			STATE_B, STATE_C, STATE_D, STATE_E : AddrReg <= AddrReg + 1'b1;
+
+		endcase
+
 	end
 
 endmodule
