@@ -104,6 +104,8 @@ program memController_testbench	(
 
 	task MemCycle (input memPkt_t pkt);
 
+		@(posedge clk)
+
 		AddrValid = 1'b1;
 		rw = pkt.Type;
 		pktAddrData = pkt.Address;
@@ -143,8 +145,6 @@ program memController_testbench	(
 
 		// print header at top of hardware log
 		$fwrite(fhandle_hw,"Hardware Results\n\n");
-
-		@(posedge clk)
 
 		for (int i = 0; i < trials; i++) begin
 
