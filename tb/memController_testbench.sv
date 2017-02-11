@@ -5,76 +5,122 @@
 //
 // Description:
 // ------------
-// lorem ipsum
-// task for read packets
-// task for write packets
-// packet = 4 16'b values
+// Testbench program for the memController module. It has several tasks which
+// make it easy to modularize the testbench functionality:
+//
+// 1) PktGen - generates & returns packets to communicate to memory
+// controller. Packet consists of a base address, transaction type
+// (READ or WRITE), and four 16-bit values. In the case of a write packet,
+// these will random values. In the case of a read, they are zeros.
+//
+// 2) MemCycle - starts of by sending an AddrValid signal, read/write signal,
+// and initial address to the memory controller. Depending on packet type
+// (READ or WRITE) it will either push packet data onto AddrData or read from
+// AddrData into the packet.
 // 
+// While these tasks run to send stimulus to the DUT and verify function in
+// software, the testbench uses $fwrite and $fmonitor to write hardware results
+// to another text file. This can be compared against the algorithmic log
+// to verify functionality is as intended.
+//
 ///////////////////////////////////////////////////////////////////////////////
 
 `include "definitions.pkg"
 
-module memController_testbench;
+program memController_testbench (
 
-	timeunit 1ns;
-	timeprecision 100ps;
+	/************************************************************************/
+	/* Top-level port declarations											*/
+	/************************************************************************/
+
+	inout	tri		[15:0]	AddrData,	// Multiplexed AddrData bus. On a write
+										// operation the address, followed by 4
+										// data items are driven onto AddrData by
+										// the CPU (your testbench).
+										// On a read operation, the CPU will
+										// drive the address onto AddrData and tristate
+										// its AddrData drivers. Your memory controller
+										// will drive the data from the memory onto
+										// the AddrData bus.
+
+	input	ulogic1		clk,			// clock to the memory controller and memory
+	input	ulogic1		resetH,			// Asserted high to reset the memory controller
+
+	input	ulogic1		AddrValid,		// Asserted high to indicate that there is
+										// valid address on AddrData. Kicks off
+										// new memory read or write cycle.
+
+	input	ulogic1		rw				// Asserted high for read, low for write
+										// valid during cycle where AddrValid asserts
+	);
 
 	/************************************************************************/
 	/* Local parameters and variables										*/
 	/************************************************************************/
 
-	inout	tri		[15:0]	AddrData_tb;	// Multiplexed AddrData bus. On a write
-											// operation the address, followed by 4
-											// data items are driven onto AddrData by
-											// the CPU (your testbench).
-											// On a read operation, the CPU will
-											// drive the address onto AddrData and tristate
-											// its AddrData drivers. Your memory controller
-											// will drive the data from the memory onto
-											// the AddrData bus. 
+	int			trials = 10;				// number of packets to send
 
-	ulogic1		clk_tb;						// clock to the memory controller and memory
-	ulogic1 	resetH_tb;					// Asserted high to reset the memory controller
+	int 		fhandle_hw_hw;				// integer to hold file location
+
+	memPkt_t	pkt_array[trials];			// array to hold all the packets
+
 	
-	ulogic1 	AddrValid_tb;				// Asserted high to indicate that there is
-											// valid address on AddrData. Kicks off
-											// new memory read or write cycle.
-
-	ulogic1 	rw_tb;						// Asserted high for read, low for write
-											// valid during cycle where AddrValid asserts
-
-	int 		fhandle;					// integer to hold file location
-
 	/************************************************************************/
-	/* Instantiating the DUT												*/
+	/* Task : PktGen														*/
 	/************************************************************************/
 
-	memController DUT (
+	task PktGen (input pktType_t pktType, output memPkt_t pkt);
+	
+		pkt.Type = pktType;
 
-		.AddrData		(AddrData_tb),		// T [15:0] Bidirectional address/data bus
-		.clk			(clk_tb),			// I [0:0] clock to the memory controller
-		.resetH			(resetH_tb),		// I [0:0] Active-high reset signal
-		.AddrValid		(AddrValid_tb),		// I [0:0] Active-high valid signal
-		.rw				(rw_tb));			// I [0:0] Active-high: read. Active-low: write
+		pkt.Address = urandom_range(16'd65535, 16'd0);
+
+		 foreach (pkt.Data[i]) begin
+
+		 	if (pkt.Type == WRITE) begin
+		 		pkt.Data[i] = urandom_range(16'd65535, 16'd0);
+		 	end
+
+		 	else begin
+		 		pkt.Data[i] = 16'd0;
+		 	end
+
+	endtask
 
 	/************************************************************************/
-	/* Running the testbench simluation										*/
+	/* Task : MemCycle														*/
 	/************************************************************************/
 
-	initial begin
+	task MemCycle (input memPkt_t pkt);
 
-		//	reset before clock starts ticking...
-			resetH_tb = 1'b0;
-		#5 	resetH_tb = 1'b1;
-		#5 	resetH_tb = 1'b0;
+		AddrValid = 1'b1;
+		rw = pkt.Type;
+		AddrData = pkt.Address;
 
-		// now start the clock for rest of simulation...
-		forever #0.5 clk_tb <= !clk_tb;
-	end
+		// for each element in packet data length
+		// (four elements by default)
+		// maniuplate global AddrData signal
 
-	//////////////////////////
-	// main simulation loop //
-	//////////////////////////
+		foreach (pkt.Data[i]) begin
+
+				@(posedge clk)
+				AddrValid = 1'b0;
+				rw = 1'b0;
+
+				if (pkt.Type == READ) begin
+					pkt.Data[i] = AddrData;
+				end
+
+				else begin
+					AddrData = pkt.Data[i];
+				end
+		end
+
+	endtask
+
+	/************************************************************************/
+	/* Main simulation loop													*/
+	/************************************************************************/
 
 	initial begin
 
@@ -82,35 +128,27 @@ module memController_testbench;
 		// also setup the output file location
 
 		$timeformat(-9, 0, "ns", 8);
-		fhandle = $fopen("C:/Users/riqbal/Desktop/memController_results.txt");
+		fhandle_hw = $fopen("C:/Users/riqbal/Desktop/memController_hw_results.txt");
 
-		// run the simulation for some number of sequences
-		for (int j = 1; j <= trials; j++) begin
+		// print header at top of hardware log
+		$fwrite(fhandle_hw,"Hardware Results\n\n");
 
-			// choose how many bytes to send this sequence
-			bytes = $urandom_range(16,1);
-			$fwrite(fhandle,"\nSending %d number of bytes to module...\n", bytes);
+		for (int i = 0; i < trials; i++) begin
 
-			// loop the number of bytes in one sequence
-			for (int i = 1; i <= bytes; i++) begin
+			PktGen(WRITE, pkt_array[i]);
+			MemCycle(pkt_array[i]);
 
-				// send a byte between 0 - 255 on inputA
-				#1 inputA_tb = $urandom_range(8'd255,8'b0);
-				start_tb = '1;
-				$fstrobe(fhandle,"Time:%t\t\tinputA: %d\t\tmaxValue: %d\t\tminValue: %d\t\t", $time, inputA_tb, maxValue_tb, minValue_tb);
-			end
-
-			// finish sequence by deasserting start
-			#1 start_tb = '0;
-			$fstrobe(fhandle,"Time:%t\t\t\t\t\t\tmaxValue: %d\t\tminValue: %d\t\t", $time, maxValue_tb, minValue_tb);
-			#5;
+			$fstrobe(fhandle_hw,	"Time:%t\t\t", $time,
+									"Packet #: %d\t\t", i,
+									"Packet Type: %s\t\t", pkt_array[i].Type.name;
+									"Packet Address: %x\t\t", pkt_array[i].Address);
 		end
 
 		// wrap up file writing & finish simulation
-		$fwrite(fhandle, "\nEND OF FILE");
-		$fclose(fhandle);
+		$fwrite(fhandle_hw, "\n\nEND OF FILE");
+		$fclose(fhandle_hw);
 		$stop;
 
 	end
 
-endmodule
+endprogram
