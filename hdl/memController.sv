@@ -13,6 +13,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 `include "definitions.sv"
+`timescale 1ns / 100ps
 
 module memController (
 
@@ -67,8 +68,8 @@ module memController (
 	/* Wire assignments														*/
 	/************************************************************************/
 
-	assign Data 	= ((state != STATE_A) && (wrEn)) ? AddrData : 16'bz;
-	assign AddrData	= (rdEn) ? Data : 16'bz;
+	assign Data = ((state != STATE_A) && (wrEn)) ? AddrData : 16'bz;
+	assign AddrData = (rdEn) ? Data : 16'bz;
 
 	/************************************************************************/
 	/* FSM Block 1: reset & state advancement								*/

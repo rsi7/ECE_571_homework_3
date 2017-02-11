@@ -26,32 +26,34 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 `include "definitions.sv"
+`timescale 1ns / 100ps
 
-program memController_testbench (
+
+program memController_testbench	(
 
 	/************************************************************************/
 	/* Top-level port declarations											*/
 	/************************************************************************/
 
-	inout	tri		[15:0]	AddrData,	// Multiplexed AddrData bus. On a write
-										// operation the address, followed by 4
-										// data items are driven onto AddrData by
-										// the CPU (your testbench).
-										// On a read operation, the CPU will
-										// drive the address onto AddrData and tristate
-										// its AddrData drivers. Your memory controller
-										// will drive the data from the memory onto
-										// the AddrData bus.
+	inout	tri		[15:0]	AddrData,			// Multiplexed AddrData bus. On a write
+												// operation the address, followed by 4
+												// data items are driven onto AddrData by
+												// the CPU (your testbench).
+												// On a read operation, the CPU will
+												// drive the address onto AddrData and tristate
+												// its AddrData drivers. Your memory controller
+												// will drive the data from the memory onto
+												// the AddrData bus.
 
-	input	ulogic1		clk,			// clock to the memory controller and memory
-	input	ulogic1		resetH,			// Asserted high to reset the memory controller
+	input	ulogic1		clk,					// clock to the memory controller and memory
+	input	ulogic1		resetH,					// Asserted high to reset the memory controller
 
-	output	ulogic1		AddrValid,		// Asserted high to indicate that there is
-										// valid address on AddrData. Kicks off
-										// new memory read or write cycle.
+	output	ulogic1		AddrValid = 1'b0,		// Asserted high to indicate that there is
+												// valid address on AddrData. Kicks off
+												// new memory read or write cycle.
 
-	output	ulogic1		rw				// Asserted high for read, low for write
-										// valid during cycle where AddrValid asserts
+	output	ulogic1		rw = 1'b0				// Asserted high for read, low for write
+												// valid during cycle where AddrValid asserts
 	);
 
 	/************************************************************************/
@@ -141,6 +143,8 @@ program memController_testbench (
 
 		// print header at top of hardware log
 		$fwrite(fhandle_hw,"Hardware Results\n\n");
+
+		@(posedge clk)
 
 		for (int i = 0; i < trials; i++) begin
 
