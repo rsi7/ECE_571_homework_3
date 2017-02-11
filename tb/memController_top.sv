@@ -56,8 +56,8 @@ module memController_top;
 
 		//	reset before clock starts ticking...
 			resetH = 1'b0;
-		#5 	resetH = 1'b1;
-		#5 	resetH = 1'b0;
+		#1 	resetH = 1'b1;
+		#1 	resetH = 1'b0;
 
 		// now start the clock for rest of simulation...
 

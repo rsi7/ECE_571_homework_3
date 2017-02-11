@@ -1,4 +1,4 @@
-# .gitignore file for ECE 581 Homework 2
+# .gitignore file for ECE 581 Homework 3
 
 $ cat .gitignore
 
@@ -7,3 +7,8 @@ $ cat .gitignore
 # available on D2L course website
 
 /docs/*
+
+# ignore config
+# handles the formatting of Questa Wave window
+
+/config/*
