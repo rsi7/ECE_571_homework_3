@@ -60,7 +60,9 @@ program memController_testbench	(
 	/* Local parameters and variables										*/
 	/************************************************************************/
 
-	memPkt_t	pkt_array[];
+	memPkt_t	wr_pkt_array[];
+	memPkt_t	rd_pkt_array[];
+
 	ulogic16	pktAddrData;
 
 	/************************************************************************/
@@ -73,11 +75,11 @@ program memController_testbench	(
 	/* Task : PktGen														*/
 	/************************************************************************/
 
-	task PktGen (input pktType_t pktType, output memPkt_t pkt);
+	task automatic PktGen (input pktType_t pktType, ref memPkt_t pkt);
 	
 		pkt.Type = pktType;
 
-		pkt.Address = $urandom_range(16'd65535, 16'd0);
+		if (pktType == WRITE) pkt.Address = $urandom_range(16'd65535, 16'd0);
 
 		 foreach (pkt.Data[i]) begin
 
@@ -97,7 +99,7 @@ program memController_testbench	(
 	/* Task : MemCycle														*/
 	/************************************************************************/
 
-	task MemCycle (input memPkt_t pkt);
+	task automatic MemCycle (ref memPkt_t pkt);
 
 		@(posedge clk)
 
@@ -143,20 +145,64 @@ program memController_testbench	(
 		// print header at top of hardware log
 		$fwrite(fhandle_wr,"Hardware Write Results:\n\n");
 
-		foreach (pkt_array[i]) begin
+		foreach (wr_pkt_array[i]) begin
 
-			PktGen(WRITE, pkt_array[i]);
-			MemCycle(pkt_array[i]);
+			PktGen(WRITE, wr_pkt_array[i]);
+			MemCycle(wr_pkt_array[i]);
 
 			$fstrobe(fhandle_wr,	"Time:%t\t\t", $time,
 									"Packet #: %2d\t\t", i,
-									"Access Type: %s\t\t", pkt_array[i].Type.name,
-									"Base Address: %4x\t\t", pkt_array[i].Address);
+									"Base Address: %6d\n\n", wr_pkt_array[i].Address,
+									
+									"Data[0]: %6d\t\n", wr_pkt_array[i].Data[0],
+									"Data[1]: %6d\t\n", wr_pkt_array[i].Data[1],
+									"Data[2]: %6d\t\n", wr_pkt_array[i].Data[2],
+									"Data[3]: %6d\t\n", wr_pkt_array[i].Data[3]);
 		end
 
 		// wrap up file writing & finish simulation
 		$fwrite(fhandle_wr, "\nEND OF FILE");
 		$fclose(fhandle_wr);
+
+	endtask
+
+	/************************************************************************/
+	/* Task : ReadFromMem													*/
+	/************************************************************************/
+
+	task ReadFromMem ();
+
+		int	fhandle_rd;
+
+		rd_pkt_array = wr_pkt_array;
+
+		// format time units for printing later
+		// also setup the output file location
+
+		$timeformat(-9, 0, "ns", 8);
+		fhandle_rd = $fopen("C:/Users/riqbal/Desktop/memController_rd_results.txt");
+
+		// print header at top of hardware log
+		$fwrite(fhandle_rd,"Hardware Read Results:\n\n");
+
+		foreach (rd_pkt_array[i]) begin
+
+			PktGen(READ, rd_pkt_array[i]);
+			MemCycle(rd_pkt_array[i]);
+
+			$fstrobe(fhandle_rd, 	"Time:%t\t\t", $time,
+									"Packet #: %2d\t\t", i,
+									"Base Address: %6d\n\n", rd_pkt_array[i].Address,
+						
+									"Data[0]: %6d\t\n", rd_pkt_array[i].Data[0],
+									"Data[1]: %6d\t\n", rd_pkt_array[i].Data[1],
+									"Data[2]: %6d\t\n", rd_pkt_array[i].Data[2],
+									"Data[3]: %6d\t\n", rd_pkt_array[i].Data[3]);
+		end
+
+		// wrap up file writing & finish simulation
+		$fwrite(fhandle_rd, "\nEND OF FILE");
+		$fclose(fhandle_rd);
 
 	endtask
 
@@ -168,9 +214,11 @@ program memController_testbench	(
 
 		static uint32 sim_trials = 10;
 
-		pkt_array = new[sim_trials];
+		wr_pkt_array = new[sim_trials];
+		rd_pkt_array = new[sim_trials];
 
 		WriteToMem();
+		ReadFromMem();
 
 		$finish;
 

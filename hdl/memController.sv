@@ -75,7 +75,7 @@ module memController (
 	/************************************************************************/
 
 	assign Data = ((state != STATE_A) && (wrEn)) ? AddrData : 16'bz;
-	assign AddrData = (rdEn) ? Data : 16'bz;
+	assign AddrData = (rdEn && !AddrValid) ? Data : 16'bz;
 
 	/************************************************************************/
 	/* FSM Block 1: reset & state advancement								*/
