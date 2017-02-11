@@ -216,7 +216,8 @@ program memController_testbench	(
 
 		wr_pkt_array = new[sim_trials];
 		rd_pkt_array = new[sim_trials];
-
+		
+		#2
 		WriteToMem();
 		ReadFromMem();
 
