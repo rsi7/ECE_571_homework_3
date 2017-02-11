@@ -80,12 +80,12 @@ program memController_testbench (
 	
 		pkt.Type = pktType;
 
-		pkt.Address = urandom_range(16'd65535, 16'd0);
+		pkt.Address = $urandom_range(16'd65535, 16'd0);
 
 		 foreach (pkt.Data[i]) begin
 
 		 	if (pkt.Type == WRITE) begin
-		 		pkt.Data[i] = urandom_range(16'd65535, 16'd0);
+		 		pkt.Data[i] = $urandom_range(16'd65535, 16'd0);
 		 	end
 
 		 	else begin
@@ -148,13 +148,13 @@ program memController_testbench (
 			MemCycle(pkt_array[i]);
 
 			$fstrobe(fhandle_hw,	"Time:%t\t\t", $time,
-									"Packet #: %d\t\t", i,
-									"Packet Type: %s\t\t", pkt_array[i].Type.name,
-									"Packet Address: %x\t\t", pkt_array[i].Address);
+									"Packet #: %2d\t\t", i,
+									"Access Type: %s\t\t", pkt_array[i].Type.name,
+									"Base Address: %6x\t\t", pkt_array[i].Address);
 		end
 
 		// wrap up file writing & finish simulation
-		$fwrite(fhandle_hw, "\n\nEND OF FILE");
+		$fwrite(fhandle_hw, "\nEND OF FILE");
 		$fclose(fhandle_hw);
 		$stop;
 

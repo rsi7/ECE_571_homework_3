@@ -60,7 +60,10 @@ module memController_top;
 		#5 	resetH = 1'b0;
 
 		// now start the clock for rest of simulation...
+
+		clk = 1'b0;
 		forever #0.5 clk <= !clk;
+		
 	end
 
 endmodule
