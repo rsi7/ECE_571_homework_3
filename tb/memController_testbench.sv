@@ -82,11 +82,13 @@ program memController_testbench	(
 
 	task automatic PktGen (input pktType_t pktType, ref memPkt_t pkt);
 	
+		ulogic4 random_page = $urandom_range(4'h2, 4'h1);
+		ulogic8 random_addr = $urandom_range(8'd255, 8'd0);
+
 		pkt.Type = pktType;
 
 		if (pktType == WRITE) begin
-			pkt.Address[11:0] = $urandom_range(12'd4096, 12'd0);
-			pkt.Address[15:12] = $urandom_range(4'h2, 4'h1);
+			pkt.Address = {random_page, 4'b0, random_addr};
 		end
 
 		 foreach (pkt.Data[i]) begin
