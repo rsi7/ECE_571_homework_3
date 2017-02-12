@@ -12,3 +12,6 @@ $ cat .gitignore
 # handles the formatting of Questa Wave window
 
 /config/*
+
+# ignore generated outputs
+/out/*

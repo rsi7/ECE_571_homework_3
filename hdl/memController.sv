@@ -99,6 +99,9 @@ module memController (
 	assign SendDataToTB = (rdEn && selectDevice);
 	assign AddrData = SendDataToTB ? Data : 16'bz;
 
+	// use wire assigns on read/write enable signals to memory
+	// to guarantee same-cycle activity
+
 	assign rdEn = selectDevice && rw_hold;
 	assign wrEn = selectDevice && !rw_hold;
 
@@ -145,7 +148,7 @@ module memController (
 	end
 
 	/************************************************************************/
-	/* FSM Block 3 & 4: assigning outputs									*/
+	/* FSM Block 3 & 4: assigning Addr & rw_hold							*/
 	/************************************************************************/
 
 	always_comb begin

@@ -21,12 +21,6 @@
 
 	package definitions;
 
-		// top four bits of the outgoing address
-		// determines which memory controller should respond
-		// to the incoming transaction
-
-		parameter	logic	[3:0]	PAGE	=	4'h2;
-
 		// type definitions for unsigned 4-state variables
 		typedef	logic		unsigned			ulogic1;
 		typedef	logic		unsigned	[1:0]	ulogic2;

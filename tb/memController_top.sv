@@ -5,7 +5,7 @@
 //
 // Description:
 // ------------
-// Top-level module which instantiates the DUT & testbench. It also handles
+// Top-level module which instantiates the DUTs & testbench. It also handles
 // the initial reset, starts the clock ticking, and sets the time units.
 // Main function is to wire the DUT & testbench together.
 // 
@@ -43,7 +43,7 @@ module memController_top;
 									// valid during cycle where AddrValid asserts
 
 	/************************************************************************/
-	/* Instantiating the DUT & testbench									*/
+	/* Instantiating the DUTs & testbench									*/
 	/************************************************************************/
 
 	memController 				#(4'h1)		DUT1	(.*);

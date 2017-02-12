@@ -29,6 +29,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+`timescale 1ns / 100ps
+
 `include "definitions.sv"
 
 program memController_testbench	(
@@ -134,7 +136,7 @@ program memController_testbench	(
 			rw = 1'b0;
 
 			if (pkt.Type == READ) begin
-				pkt.Data[i] = AddrData;
+				#0.5 pkt.Data[i] = AddrData;
 			end
 
 			else begin
@@ -260,10 +262,10 @@ program memController_testbench	(
 
 				$fwrite(fhandle_ck, 	"Time:%t\t\t", $time,
 										"Packet #: %2d\t\t", i,
-										"Base Address: %6d\n", wr_pkt_array[i].Address,
+										"Base Address: %6d\n\n", wr_pkt_array[i].Address,
 						
 										"Write data[%1d]:%6d\t\n", j, wr_pkt_array[i].Data[j],
-										"Read  data[%1d]:%6d\t\n\n", j, rd_pkt_array[i].Data[j]);
+										"Read  data[%1d]:%6d\t\n\n\n", j, rd_pkt_array[i].Data[j]);
 				end
 			end
 		end
