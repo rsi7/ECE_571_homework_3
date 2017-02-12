@@ -230,6 +230,53 @@ program memController_testbench	(
 	endtask
 
 	/************************************************************************/
+	/* Task : Checker														*/
+	/************************************************************************/
+
+	task Checker();
+
+		int		fhandle_ck;
+		uint32	errors;
+
+		// format time units for printing later
+		// also setup the output file location
+
+		$timeformat(-9, 0, "ns", 8);
+		fhandle_ck = $fopen("C:/Users/riqbal/Desktop/memController_ck_results.txt");
+
+		// print header at top of read log
+		$fwrite(fhandle_ck,"Checker Results:\n\n");
+
+		// set errors to zero before test
+		errors = 0;
+
+		foreach (wr_pkt_array[i]) begin
+
+			foreach (wr_pkt_array[i].Data[j]) begin
+
+				if (wr_pkt_array[i].Data[j] != rd_pkt_array[i].Data[j]) begin
+
+				errors = errors + 1;
+
+				$fwrite(fhandle_ck, 	"Time:%t\t\t", $time,
+										"Packet #: %2d\t\t", i,
+										"Base Address: %6d\n", wr_pkt_array[i].Address,
+						
+										"Write data[%1d]:%6d\t\n", j, wr_pkt_array[i].Data[j],
+										"Read  data[%1d]:%6d\t\n\n", j, rd_pkt_array[i].Data[j]);
+				end
+			end
+		end
+
+		// wrap up file writing
+		$fwrite(fhandle_ck, "\nSUMMARY: %3d Errors were found!", errors);
+		$fwrite(fhandle_ck, "\n\nEND OF FILE");
+		$fclose(fhandle_ck);
+
+	endtask
+
+
+	/************************************************************************/
 	/* Main simulation loop													*/
 	/************************************************************************/
 
@@ -245,6 +292,10 @@ program memController_testbench	(
 		WriteToMem();
 		ReadFromMem();
 
+		// check the read results against what was written
+		Checker();
+
+		// simulation over... review results
 		$stop;
 
 	end
