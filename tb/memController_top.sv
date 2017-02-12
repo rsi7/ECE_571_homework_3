@@ -7,6 +7,7 @@
 // ------------
 // Top-level module which instantiates the DUT & testbench. It also handles
 // the initial reset, starts the clock ticking, and sets the time units.
+// Main function is to wire the DUT & testbench together.
 // 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -45,8 +46,9 @@ module memController_top;
 	/* Instantiating the DUT & testbench									*/
 	/************************************************************************/
 
-	memController 				DUT		(.*);
-	memController_testbench		tb		(.*);
+	memController 				#(4'h1)		DUT1	(.*);
+	memController				#(4'h2)		DUT2	(.*);
+	memController_testbench					tb		(.*);
 
 	/************************************************************************/
 	/* Handle simulation reset & clock ticking...							*/

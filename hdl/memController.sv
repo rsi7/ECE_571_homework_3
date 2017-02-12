@@ -13,7 +13,6 @@
 //////////////////////////////////////////////////////////////////////////////
 
 `include "definitions.sv"
-`timescale 1ns / 100ps
 
 module memController (
 
@@ -46,6 +45,8 @@ module memController (
 	/* Local parameters and variables										*/
 	/************************************************************************/
 
+	parameter	PAGE 	= 4'h2;
+
 	state_t		state	= STATE_A;		// register to hold current FSM state
 	state_t		next	= STATE_A;		// register to hold pending FSM state
 
@@ -62,20 +63,44 @@ module memController (
 	/* Local parameters and variables										*/
 	/************************************************************************/
 
-	ulogic16	AddrReg	= '0;
+	ulogic16	AddrReg	= '0;			// Reg to hold Address for incrementing
+	
+	ulogic1		selectDevice;			// selects the current memory controller
+	ulogic1		SendDataToMem;			// flag for sending data to memory
+	ulogic1		SendDataToTB;			// flag for sending data to testbench
+	ulogic1		rw_hold;				// register for holding R/W status during cycle
 
 	/************************************************************************/
 	/* Instantiate a memory device											*/
 	/************************************************************************/
 	
-	mem		mem1	(.*);
+	mem		mem1	(.*);				// Instantiate a memory device
 
 	/************************************************************************/
 	/* Wire assignments														*/
 	/************************************************************************/
 
-	assign Data = ((state != STATE_A) && (wrEn)) ? AddrData : 16'bz;
-	assign AddrData = (rdEn && !AddrValid) ? Data : 16'bz;
+	// Select the controller if address matches page
+	// and address-input phase of cycles is over
+
+	assign selectDevice = ((AddrReg[15:12] == PAGE) && !AddrValid) ? 1'b1 : 1'b0;
+
+	// Data is tri-state (wire) so need continous assignnment
+	// need to send data to mem when it's a write packet & AddrValid is low
+	// otherwise, keep disconnected
+
+	assign SendDataToMem = (wrEn && selectDevice);
+	assign Data = SendDataToMem ? AddrData : 16'bz;
+	
+	// AddrData is tri-state (wire), so need continous assignment
+	// need to send data to TB  when it's a READ packet & AddrValid is low
+	// otherwise, keep disconnected
+
+	assign SendDataToTB = (rdEn && selectDevice);
+	assign AddrData = SendDataToTB ? Data : 16'bz;
+
+	assign rdEn = selectDevice && rw_hold;
+	assign wrEn = selectDevice && !rw_hold;
 
 	/************************************************************************/
 	/* FSM Block 1: reset & state advancement								*/
@@ -130,8 +155,7 @@ module memController (
 			// handle address input & determine R/W status
 			STATE_A : begin
 
-				rdEn = (rw) ? 1'b1 : 1'b0; 
-				wrEn = (rw) ? 1'b0 : 1'b1;
+				rw_hold = (rw) ? 1'b1 : 1'b0; 
 				Addr = (AddrValid) ? (AddrData[7:0]) : '0;
 
 			end
@@ -143,19 +167,21 @@ module memController (
 
 			STATE_B, STATE_C, STATE_D, STATE_E : begin
 
-				rdEn = rdEn; 
-				wrEn = wrEn;
+				rw_hold = rw_hold; 
 				Addr = AddrReg;
 
 			end
 		endcase
 	end
 
+	// block to hold address value for one cycle, then increment for 3 cycles
+	// need for sequential memory accesses in both read & write
+
 	always_ff@(posedge clk) begin
 
 		unique case (state)
 
-			STATE_A : AddrReg <= Addr;
+			STATE_A : AddrReg <= AddrData;
 			STATE_B, STATE_C, STATE_D, STATE_E : AddrReg <= AddrReg + 1'b1;
 
 		endcase

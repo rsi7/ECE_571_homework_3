@@ -8,26 +8,28 @@
 // Testbench program for the memController module. It has several tasks which
 // make it easy to modularize the testbench functionality:
 //
-// 1) PktGen - generates & returns packets to communicate to memory
+// 1) PktGen - generates packets to communicate to memory
 // controller. Packet consists of a base address, transaction type
 // (READ or WRITE), and four 16-bit values. In the case of a write packet,
 // these will random values. In the case of a read, they are zeros.
+// Function updates the global copy of the packet array.
 //
 // 2) MemCycle - starts of by sending an AddrValid signal, read/write signal,
 // and initial address to the memory controller. Depending on packet type
 // (READ or WRITE) it will either push packet data onto AddrData or read from
-// AddrData into the packet.
-// 
-// While these tasks run to send stimulus to the DUT and verify function in
-// software, the testbench uses $fwrite and $fmonitor to write hardware results
-// to another text file. This can be compared against the algorithmic log
-// to verify functionality is as intended.
+// AddrData into the packet. Function updates the global copy of the packet array.
+//
+// 3) WriteToMem - Sets up the write test. Goes through each element of the
+// packet array and calls PktGen to generate the necessary data. Then calls
+// MemCycle to send the appropriate bus signals.
+//
+// 4) ReadFromMem - Sets up the read test. Goes through each element of the
+// packet array and calls PktGen to generate the necessary data. Then calls
+// MemCycle to send the appropriate bus signals.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
 `include "definitions.sv"
-`timescale 1ns / 100ps
-
 
 program memController_testbench	(
 
@@ -60,16 +62,19 @@ program memController_testbench	(
 	/* Local parameters and variables										*/
 	/************************************************************************/
 
-	memPkt_t	wr_pkt_array[];
-	memPkt_t	rd_pkt_array[];
+	memPkt_t	wr_pkt_array[];			// global array of write-to-memory packets
+	memPkt_t	rd_pkt_array[];			// global array of read-from-memomry packets
 
-	ulogic16	pktAddrData;
+	ulogic16	pktAddrData;			// register value to hold AddrData values
 
 	/************************************************************************/
 	/* Wire assignments														*/
 	/************************************************************************/
 
-	assign AddrData = ((DUT.rdEn) && (!AddrValid)) ? 16'bz : pktAddrData;
+	// AddrData is tri-state (wire), so need continous assignment
+
+	assign SendDataToTB = ((DUT1.rdEn) || (DUT2.rdEn)) && !AddrValid;
+	assign AddrData = SendDataToTB ? 16'bz : pktAddrData;
 	
 	/************************************************************************/
 	/* Task : PktGen														*/
@@ -79,7 +84,10 @@ program memController_testbench	(
 	
 		pkt.Type = pktType;
 
-		if (pktType == WRITE) pkt.Address = $urandom_range(16'd65535, 16'd0);
+		if (pktType == WRITE) begin
+			pkt.Address[11:0] = $urandom_range(12'd4096, 12'd0);
+			pkt.Address[15:12] = $urandom_range(4'h2, 4'h1);
+		end
 
 		 foreach (pkt.Data[i]) begin
 
@@ -103,8 +111,14 @@ program memController_testbench	(
 
 		@(posedge clk)
 
+		// send signals for cycle  A of the transaction
+		// AddrValid for 1 cycle
 		AddrValid = 1'b1;
 		rw = pkt.Type;
+
+		// put packet address on the AddrData bus
+		// through pktAddrData register
+
 		pktAddrData = pkt.Address;
 
 		// for each element in packet data length
@@ -142,14 +156,16 @@ program memController_testbench	(
 		$timeformat(-9, 0, "ns", 8);
 		fhandle_wr = $fopen("C:/Users/riqbal/Desktop/memController_wr_results.txt");
 
-		// print header at top of hardware log
+		// print header at top of write log
 		$fwrite(fhandle_wr,"Hardware Write Results:\n\n");
 
 		foreach (wr_pkt_array[i]) begin
 
+			// generate packets & send the bus signals
 			PktGen(WRITE, wr_pkt_array[i]);
 			MemCycle(wr_pkt_array[i]);
 
+			// print signal values to log file
 			$fstrobe(fhandle_wr,	"Time:%t\t\t", $time,
 									"Packet #: %2d\t\t", i,
 									"Base Address: %6d\n\n", wr_pkt_array[i].Address,
@@ -160,7 +176,7 @@ program memController_testbench	(
 									"Data[3]: %6d\t\n", wr_pkt_array[i].Data[3]);
 		end
 
-		// wrap up file writing & finish simulation
+		// wrap up file writing
 		$fwrite(fhandle_wr, "\nEND OF FILE");
 		$fclose(fhandle_wr);
 
@@ -174,6 +190,9 @@ program memController_testbench	(
 
 		int	fhandle_rd;
 
+		// copy the write-packet array to read-packet array
+		// this lets us reuse the Address - we'll wipe their Data
+
 		rd_pkt_array = wr_pkt_array;
 
 		// format time units for printing later
@@ -182,14 +201,16 @@ program memController_testbench	(
 		$timeformat(-9, 0, "ns", 8);
 		fhandle_rd = $fopen("C:/Users/riqbal/Desktop/memController_rd_results.txt");
 
-		// print header at top of hardware log
+		// print header at top of read log
 		$fwrite(fhandle_rd,"Hardware Read Results:\n\n");
 
 		foreach (rd_pkt_array[i]) begin
 
+			// generate packets & send the bus signals
 			PktGen(READ, rd_pkt_array[i]);
 			MemCycle(rd_pkt_array[i]);
 
+			// print signal values to log file
 			$fstrobe(fhandle_rd, 	"Time:%t\t\t", $time,
 									"Packet #: %2d\t\t", i,
 									"Base Address: %6d\n\n", rd_pkt_array[i].Address,
@@ -200,7 +221,7 @@ program memController_testbench	(
 									"Data[3]: %6d\t\n", rd_pkt_array[i].Data[3]);
 		end
 
-		// wrap up file writing & finish simulation
+		// wrap up file writing
 		$fwrite(fhandle_rd, "\nEND OF FILE");
 		$fclose(fhandle_rd);
 
@@ -212,16 +233,17 @@ program memController_testbench	(
 
 	initial begin
 
-		static uint32 sim_trials = 10;
+		static uint32 sim_trials = 16;
 
+		// dynamically allocate more entries
 		wr_pkt_array = new[sim_trials];
 		rd_pkt_array = new[sim_trials];
-		
-		#2
+
+		// call the write & read tests
 		WriteToMem();
 		ReadFromMem();
 
-		$finish;
+		$stop;
 
 	end
 
